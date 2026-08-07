@@ -14,7 +14,8 @@ dependencies = [
 
 [tool.uv.sources]
 open3d = [
-    { url = "https://github.com/isl-org/Open3D/releases/download/main-devel/open3d-0.19.0-cp314-cp314-manylinux_2_35_x86_64.whl", marker = "platform_machine == 'x86_64'" },
+    { url = "https://github.com/isl-org/Open3D/releases/download/main-devel/open3d-0.19.0-cp314-cp314-manylinux_2_35_x86_64.whl", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { url = "https://github.com/isl-org/Open3D/releases/download/main-devel/open3d-0.19.0+63e30be-cp314-cp314-win_amd64.whl", marker = "sys_platform == 'win32'" },
 ]
 
 [build-system]

@@ -63,6 +63,100 @@ def grad_pb(u, v, R0, A, m, n):
 
     return J, N
 
+def grad_grad_pb(u, v, R0, A, m, n):
+    """
+    Computes the second derivatives of the perturbed bubble surface.
+
+    Parameters:
+    u (ndarray): The u parameter grid.
+    v (ndarray): The v parameter grid.
+    R0 (float): Base radius of the bubble.
+    A (float): Amplitude of the perturbation.
+    m (int): Frequency of the perturbation in the u direction.
+    n (int): Frequency of the perturbation in the v direction.
+
+    Returns:
+    gradJ (ndarray): The Hessian of the perturbed bubble surface, stacked as
+        [[Xuu, Xuv], [Xuv, Xvv]] along the last two non-coordinate axes.
+    """
+
+    # Helper terms
+    su, cu = np.sin(u), np.cos(u)
+    cnu = np.cos(n * u)
+    cmv = np.cos(m * v)
+    snu = np.sin(n * u)
+    smv = np.sin(m * v)
+    sucv = np.sin(u) * np.cos(v)
+    cucv = np.cos(u) * np.cos(v)
+    sucv = np.sin(u) * np.cos(v)
+    cucv = np.cos(u) * np.cos(v)
+    susv = np.sin(u) * np.sin(v)
+    cusv = np.cos(u) * np.sin(v)
+
+    r = R0 + A * snu * cmv
+    dr_du = A * n * cnu * cmv
+    dr_dv = -A * m * snu * smv
+    d2r_du2 = -A * n**2 * snu * cmv
+    d2r_dudv = -A * m * n * cnu * smv
+    d2r_dv2 = -A * m**2 * snu * cmv
+
+    d2x_du2 = d2r_du2 * sucv + 2 * dr_du * cucv - r * sucv
+    d2x_dudv = d2r_dudv * sucv - dr_du * susv + dr_dv * cucv - r * cusv
+    d2x_dv2 = d2r_dv2 * sucv - 2 * dr_dv * susv - r * sucv
+
+    d2y_du2 = d2r_du2 * susv + 2 * dr_du * cusv - r * susv
+    d2y_dudv = d2r_dudv * susv + dr_du * sucv + dr_dv * cusv + r * cucv
+    d2y_dv2 = d2r_dv2 * susv + 2 * dr_dv * sucv - r * susv
+
+    d2z_du2 = d2r_du2 * cu - 2 * dr_du * su - r * cu
+    d2z_dudv = d2r_dudv * cu - dr_dv * su
+    d2z_dv2 = d2r_dv2 * cu
+
+    Xuu = np.stack([d2x_du2, d2y_du2, d2z_du2], axis=-1)
+    Xuv = np.stack([d2x_dudv, d2y_dudv, d2z_dudv], axis=-1)
+    Xvv = np.stack([d2x_dv2, d2y_dv2, d2z_dv2], axis=-1)
+
+    dJdu = np.stack([Xuu, Xuv], axis=-2)
+    dJdv = np.stack([Xuv, Xvv], axis=-2)
+    gradJ = np.stack([dJdu, dJdv], axis=-3)
+
+    return gradJ
+
+
+def curvatures_pb(u, v, R0, A, m, n):
+    """
+    Computes the Gaussian and mean curvatures of the perturbed bubble surface.
+
+    Parameters:
+    u (ndarray): The u parameter grid.
+    v (ndarray): The v parameter grid.
+    R0 (float): Base radius of the bubble.
+    A (float): Amplitude of the perturbation.
+    m (int): Frequency of the perturbation in the u direction.
+    n (int): Frequency of the perturbation in the v direction.
+
+    Returns:
+    K, H (ndarray): The Gaussian and mean curvatures of the perturbed bubble surface.
+    """
+    J, N = grad_pb(u, v, R0, A, m, n)
+    Xu, Xv = J[..., 0, :], J[..., 1, :]
+
+    gradJ = grad_grad_pb(u, v, R0, A, m, n)
+    Xuu, Xuv, Xvv = gradJ[..., 0, 0, :], gradJ[..., 0, 1, :], gradJ[..., 1, 1, :]
+
+    E = np.sum(Xu * Xu, axis=-1)
+    F = np.sum(Xu * Xv, axis=-1)
+    G = np.sum(Xv * Xv, axis=-1)
+
+    L = np.sum(Xuu * N, axis=-1)
+    M = np.sum(Xuv * N, axis=-1)
+    Nn = np.sum(Xvv * N, axis=-1)
+
+    denom = E * G - F**2
+    K = (L * Nn - M**2) / denom
+    H = (E * Nn - 2 * F * M + G * L) / (2 * denom)
+
+    return K, H
 
 
 def plot_perturbed_bubble(R0=1.0, A=0.35, m=6, n=8, density=1000,
