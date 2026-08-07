@@ -160,7 +160,7 @@ def curvatures_pb(u, v, R0, A, m, n):
 
 
 def plot_perturbed_bubble(R0=1.0, A=0.35, m=6, n=8, density=1000,
-                           slice_u=None, slice_density=1000, arrow_mag=0.01,
+                           slice_u=None, slice_density=1000, arrow_mag=0.05,
                            all_normals=False, all_normals_density=40):
     """
     Renders the perturbed bubble surface with PyVista.
@@ -225,6 +225,49 @@ def plot_perturbed_bubble(R0=1.0, A=0.35, m=6, n=8, density=1000,
     plotter.show()
 
 
+def plot_curvatures_pb(R0=1.0, A=0.35, m=6, n=8, density=1000):
+    """
+    Renders the perturbed bubble surface with PyVista, colormapped by
+    Gaussian curvature K and mean curvature H, each in its own window.
+
+    Parameters:
+    R0, A, m, n: passed through to perturbed_bubble.
+    density (int): number of samples along each of u and v (density x density mesh).
+    """
+    u = np.linspace(0, np.pi, density)
+    v = np.linspace(0, 2 * np.pi, density)
+    u, v = np.meshgrid(u, v)
+
+    X, Y, Z = perturbed_bubble(u, v, R0, A, m, n)
+    K, H = curvatures_pb(u, v, R0, A, m, n)
+
+    grid = pv.StructuredGrid(X, Y, Z)
+    grid["K"] = K.ravel(order="F")
+    grid["H"] = H.ravel(order="F")
+
+    for scalars in ("K", "H"):
+        # u=0/pi poles are a coordinate singularity (Xu -> 0) that blows up
+        # K and H to huge spurious values; clip the color range so those
+        # outliers don't wash out the real variation over the rest of the surface.
+        clim = np.nanpercentile(grid[scalars], [10, 90])
+
+        plotter = pv.Plotter(lighting="three lights")
+        plotter.enable_anti_aliasing("fxaa")
+        plotter.add_mesh(
+            grid,
+            scalars=scalars,
+            cmap="viridis",
+            clim=clim,
+            smooth_shading=True,
+            specular=0.5,
+            specular_power=15,
+        )
+        plotter.show_grid()
+        plotter.add_axes()
+        plotter.add_text(scalars, font_size=12)
+        plotter.show()
+
+
 def plot_point_cloud_o3d(R0=1.0, A=0.35, m=6, n=8, density=200, k_neighbors=30):
     """
     Samples the perturbed bubble surface into a raw point cloud, hands it to
@@ -254,7 +297,10 @@ def plot_point_cloud_o3d(R0=1.0, A=0.35, m=6, n=8, density=200, k_neighbors=30):
 
 def main():
     plot_perturbed_bubble(A=0.10, m=15, n=2, density=1000, slice_u=np.radians(30))
-    plot_point_cloud_o3d(A=0.10, m=15, n=2, density=400, k_neighbors=30)
+    plot_curvatures_pb(A=0.10, m=15, n=2, density=1000)
+    plot_perturbed_bubble(A=0.010, m=50, n=50, density=1000, slice_u=np.radians(30))
+    plot_curvatures_pb(A=0.010, m=50, n=50, density=1000)
+    # plot_point_cloud_o3d(A=0.10, m=15, n=2, density=400, k_neighbors=30)
 
 if __name__ == "__main__":
     main()
