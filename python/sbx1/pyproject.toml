@@ -7,8 +7,14 @@ requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.11.1",
     "numpy>=2.5.1",
+    "open3d",
     "plotly>=6.8.0",
     "pyvista>=0.48.4",
+]
+
+[tool.uv.sources]
+open3d = [
+    { url = "https://github.com/isl-org/Open3D/releases/download/main-devel/open3d-0.19.0-cp314-cp314-manylinux_2_35_x86_64.whl", marker = "platform_machine == 'x86_64'" },
 ]
 
 [build-system]
