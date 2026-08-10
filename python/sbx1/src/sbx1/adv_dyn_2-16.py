@@ -223,7 +223,7 @@ def main():
             t += dt
 
         plotter.update()
-        time.sleep(dt+0.01)
+        time.sleep(dt)
 
 
 if __name__ == "__main__":
