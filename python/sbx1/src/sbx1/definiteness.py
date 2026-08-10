@@ -1,6 +1,6 @@
 import numpy as np
-import plotly.graph_objects as go
-import plotly.figure_factory as ff
+import matplotlib.pyplot as plt
+import pyvista as pv
 
 def generate_random_matrices():
     """Generates random 2x2 PD and PSD matrices using eigendecomposition."""
@@ -47,30 +47,48 @@ def main():
     print(f"PSD Matrix:\n{A_psd}\nEigenvalues: {eig_psd}")
 
     skip = (slice(None, None, 3), slice(None, None, 3))
-    fig1 = go.Figure(data=go.Surface(x=X, y=Y, z=Z_pd, colorscale='Viridis'))
-    fig1.update_layout(
-        title=f"PD Energy Landscape (Bowl)<br>Eigenvalues: {eig_pd[0]:.2f}, {eig_pd[1]:.2f}",
-        scene=dict(zaxis=dict(range=[-1, np.max(Z_pd) + 1])),
-    )
-    fig1.show()
-    fig2 = go.Figure(data=go.Surface(x=X, y=Y, z=Z_psd, colorscale='Plasma'))
-    fig2.update_layout(
-        title=f"PSD Energy Landscape (Trough)<br>Eigenvalues: {eig_psd[0]:.2f}, {eig_psd[1]:.2f}",
-        scene=dict(zaxis=dict(range=[-1, np.max(Z_pd) + 1])),
-    )
-    fig2.show()
-    fig3 = ff.create_quiver(X[skip], Y[skip], U_pd[skip], V_pd[skip], scale=0.1, line=dict(color='black'))
-    fig3.add_trace(go.Contour(x=x, y=y, z=Z_pd, colorscale='Viridis', opacity=0.5, showscale=False))
-    fig3.add_trace(go.Scatter(x=[0], y=[0], mode='markers', marker=dict(color='black', size=10)))
-    fig3.update_layout(title="PD Vector Field & Level Sets<br>(Ellipses with Unique Minimum)")
-    fig3.update_yaxes(scaleanchor="x", scaleratio=1)
-    fig3.show()
-    fig4 = ff.create_quiver(X[skip], Y[skip], U_psd[skip], V_psd[skip], scale=0.1, line=dict(color='black'))
-    fig4.add_trace(go.Contour(x=x, y=y, z=Z_psd, colorscale='Plasma', opacity=0.5, showscale=False))
-    fig4.add_trace(go.Scatter(x=[0], y=[0], mode='markers', marker=dict(color='black', size=10)))
-    fig4.update_layout(title="PSD Vector Field & Level Sets<br>(Parallel Lines with Infinite Minima)")
-    fig4.update_yaxes(scaleanchor="x", scaleratio=1)
-    fig4.show()
+
+    grid_pd = pv.StructuredGrid(X, Y, Z_pd)
+    plotter_pd = pv.Plotter()
+    plotter_pd.set_background("white")
+    plotter_pd.add_mesh(grid_pd, scalars=Z_pd.ravel(order="F"), cmap="viridis", show_scalar_bar=False)
+    plotter_pd.show_grid(xtitle="x", ytitle="y", ztitle="energy", color="black")
+    plotter_pd.add_axes()
+    plotter_pd.add_title(f"PD Energy Landscape (Bowl)  eigenvalues: {eig_pd[0]:.2f}, {eig_pd[1]:.2f}", font_size=10, color="black")
+    plotter_pd.show()
+
+    grid_psd = pv.StructuredGrid(X, Y, Z_psd)
+    plotter_psd = pv.Plotter()
+    plotter_psd.set_background("white")
+    plotter_psd.add_mesh(grid_psd, scalars=Z_psd.ravel(order="F"), cmap="plasma", show_scalar_bar=False)
+    plotter_psd.show_grid(xtitle="x", ytitle="y", ztitle="energy", color="black")
+    plotter_psd.add_axes()
+    plotter_psd.add_title(f"PSD Energy Landscape (Trough)  eigenvalues: {eig_psd[0]:.2f}, {eig_psd[1]:.2f}", font_size=10, color="black")
+    plotter_psd.show()
+
+    fig3, ax3 = plt.subplots()
+    cs3 = ax3.contourf(X, Y, Z_pd, cmap="viridis", alpha=0.5)
+    ax3.quiver(X[skip], Y[skip], U_pd[skip], V_pd[skip], color="black")
+    ax3.plot(0, 0, "ko", ms=10)
+    ax3.set_title("PD Vector Field & Level Sets\n(Ellipses with Unique Minimum)")
+    ax3.set_xlabel("x")
+    ax3.set_ylabel("y")
+    ax3.grid(True, alpha=0.3)
+    ax3.set_aspect("equal")
+    fig3.colorbar(cs3, ax=ax3, label="energy")
+
+    fig4, ax4 = plt.subplots()
+    cs4 = ax4.contourf(X, Y, Z_psd, cmap="plasma", alpha=0.5)
+    ax4.quiver(X[skip], Y[skip], U_psd[skip], V_psd[skip], color="black")
+    ax4.plot(0, 0, "ko", ms=10)
+    ax4.set_title("PSD Vector Field & Level Sets\n(Parallel Lines with Infinite Minima)")
+    ax4.set_xlabel("x")
+    ax4.set_ylabel("y")
+    ax4.grid(True, alpha=0.3)
+    ax4.set_aspect("equal")
+    fig4.colorbar(cs4, ax=ax4, label="energy")
+
+    plt.show()
 
 if __name__ == "__main__":
     main()
