@@ -1,17 +1,18 @@
 [project]
 name = "sbx1"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
-    "matplotlib>=3.11.1",
-    "numpy>=2.5.1",
+    "matplotlib",
+    "numpy",
     "open3d",
-    "pyside6>=6.11.1",
-    "pyvista>=0.48.4",
+    "pyside6",
+    "pyvista",
 ]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
