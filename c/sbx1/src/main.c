@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "memtests.h"
+
 typedef unsigned __int128 u128;
 
 u128 fibonacci(unsigned int n) {
@@ -65,6 +67,8 @@ int main(void) {
     printf("2^128 + 1 (wrapped) = ");
     print_u128(z);
     printf("\n");
+
+    memory_leak();
 
     return 0;
 }
