@@ -1,0 +1,17 @@
+[project]
+name = "rpimonitor"
+version = "0.1.0"
+classifiers = [
+    "Private :: Do Not Upload"
+]
+requires-python = ">=3.12"
+dependencies = [
+    "opencv-python",
+    "numpy",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
