@@ -1,0 +1,25 @@
+name: CjwlogGPS
+options:
+  bundleIdPrefix: com.coltonwright
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  CjwlogGPS:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    info:
+      path: Sources/Info.plist
+      properties:
+        UILaunchScreen: {}
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Logs your location periodically to your personal server."
+        NSLocationWhenInUseUsageDescription: "Logs your location periodically to your personal server."
+        NSLocationAlwaysUsageDescription: "Logs your location periodically to your personal server."
+        UIBackgroundModes: [location]
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.coltonwright.cjwloggps
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO

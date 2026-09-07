@@ -1,9 +1,12 @@
+import os
+import secrets
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, Form
+from fastapi import Depends, FastAPI, Form, HTTPException
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
@@ -20,6 +23,22 @@ SUBSTANCES = [
 
 
 UNDO_WINDOW = timedelta(hours=12)
+
+OWNTRACKS_USER = os.environ.get("CJWLOG_OWNTRACKS_USER")
+OWNTRACKS_PASS = os.environ.get("CJWLOG_OWNTRACKS_PASS")
+owntracks_security = HTTPBasic(auto_error=False)
+
+
+def check_owntracks_auth(credentials: HTTPBasicCredentials | None = Depends(owntracks_security)) -> None:
+    if not OWNTRACKS_USER:
+        return
+    valid = (
+        credentials is not None
+        and secrets.compare_digest(credentials.username, OWNTRACKS_USER)
+        and secrets.compare_digest(credentials.password, OWNTRACKS_PASS)
+    )
+    if not valid:
+        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
 
 
 def now() -> str:
@@ -147,6 +166,35 @@ def log_note(text: str = Form(...)):
         conn.execute("INSERT INTO note (logged_at, text) VALUES (?, ?)", (now(), text))
     sync_to_remote()
     return RedirectResponse("/", status_code=303)
+
+
+@app.post("/owntracks")
+async def owntracks(request: Request, _auth: None = Depends(check_owntracks_auth)):
+    payload = await request.json()
+    items = payload if isinstance(payload, list) else [payload]
+    with get_connection() as conn:
+        for item in items:
+            if item.get("_type") != "location":
+                continue
+            conn.execute(
+                """
+                INSERT INTO gps
+                    (logged_at, latitude, longitude, accuracy_m, altitude_m, velocity_kmh, battery_pct, tid)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    datetime.fromtimestamp(item["tst"], tz=timezone.utc).isoformat(),
+                    item["lat"],
+                    item["lon"],
+                    item.get("acc"),
+                    item.get("alt"),
+                    item.get("vel"),
+                    item.get("batt"),
+                    item.get("tid"),
+                ),
+            )
+    sync_to_remote()
+    return {}
 
 
 UNDOABLE_TABLES = {"weight", "sleep", "intake", "psychiatric", "note"}

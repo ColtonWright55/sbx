@@ -1,0 +1,45 @@
+name: cjwlog-gps-ios
+
+on:
+  push:
+    paths:
+      - "swift/cjwlog-gps/**"
+      - ".github/workflows/cjwlog-gps-ios.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: swift/cjwlog-gps
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned .app
+        run: |
+          xcodebuild \
+            -project CjwlogGPS.xcodeproj \
+            -scheme CjwlogGPS \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            clean build
+
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/CjwlogGPS.app Payload/
+          zip -r CjwlogGPS.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CjwlogGPS-ipa
+          path: swift/cjwlog-gps/CjwlogGPS.ipa

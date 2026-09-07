@@ -49,6 +49,18 @@ CREATE TABLE IF NOT EXISTS note (
     logged_at TEXT NOT NULL,
     text TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS gps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    logged_at TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    accuracy_m REAL,
+    altitude_m REAL,
+    velocity_kmh REAL,
+    battery_pct INTEGER,
+    tid TEXT
+);
 """
 
 
