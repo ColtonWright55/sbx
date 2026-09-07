@@ -8,6 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     "opencv-python",
     "numpy",
+    "pillow>=12.3.0",
 ]
 
 [tool.uv]
