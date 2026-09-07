@@ -1,0 +1,23 @@
+[project]
+name = "cjwlog"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "python-multipart",
+    "tbxdata",
+    "streamlit>=1.63.0",
+    "pandas>=3.0.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.uv.sources]
+tbxdata = { git = "https://github.com/ColtonWright55/tbx.git", subdirectory = "python/tbxdata" }

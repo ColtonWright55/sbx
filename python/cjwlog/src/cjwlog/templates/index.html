@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wellness Log</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; }
+    section { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #ddd; }
+    h2 { font-size: 1rem; margin-bottom: 0.5rem; }
+    form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
+    input[type=number], input[type=text], input[type=datetime-local] { flex: 1; min-width: 8rem; padding: 0.4rem; }
+    button { padding: 0.4rem 0.8rem; }
+    .button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    ul { list-style: none; padding-left: 0; font-size: 0.9rem; color: #444; }
+    li { display: flex; align-items: center; gap: 0.5rem; padding: 0.15rem 0; }
+    li form { margin: 0; }
+    .undo-btn { background: #c0392b; color: #fff; border: none; border-radius: 3px; padding: 0.15rem 0.5rem; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Wellness Log</h1>
+
+  <section>
+    <h2>Weight</h2>
+    <form method="post" action="/weight">
+      <input type="number" step="0.1" name="weight_lbs" placeholder="lbs" required>
+      <button type="submit">Log</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Sleep</h2>
+    <form method="post" action="/sleep">
+      <label>Bedtime <input type="datetime-local" name="bedtime" value="{{ default_bedtime }}" required></label>
+      <label>Wake <input type="datetime-local" name="wake_time" value="{{ default_wake }}" required></label>
+      <button type="submit">Log</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Substances</h2>
+    {% for category, label, names in substances %}
+    <p>{{ label }}</p>
+    <div class="button-row">
+      {% for name in names %}
+      <form method="post" action="/intake">
+        <input type="hidden" name="category" value="{{ category }}">
+        <input type="hidden" name="name" value="{{ name }}">
+        <button type="submit">{{ name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h2>Psychiatric</h2>
+    <p>Mood</p>
+    <div class="button-row">
+      {% for n in scale %}
+      <form method="post" action="/psychiatric">
+        <input type="hidden" name="mood" value="{{ n }}">
+        <button type="submit">{{ n }}</button>
+      </form>
+      {% endfor %}
+    </div>
+    <p>Energy</p>
+    <div class="button-row">
+      {% for n in scale %}
+      <form method="post" action="/psychiatric">
+        <input type="hidden" name="energy" value="{{ n }}">
+        <button type="submit">{{ n }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2>Note</h2>
+    <form method="post" action="/note">
+      <input type="text" name="text" placeholder="note" required>
+      <button type="submit">Log</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Recent</h2>
+    <ul>
+      {% for row in recent %}
+      <li>
+        <span>{{ row.display_time }} — {{ row.description }}</span>
+        {% if row.can_undo %}
+        <form method="post" action="/undo" onsubmit="return confirm('Undo this entry?')">
+          <input type="hidden" name="table" value="{{ row.table_name }}">
+          <input type="hidden" name="id" value="{{ row.id }}">
+          <button type="submit" class="undo-btn">Undo</button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <details>
+    <summary>Log earlier</summary>
+    <form method="post" action="/intake">
+      <select name="combo">
+        {% for category, label, names in substances %}
+        {% for name in names %}
+        <option value="{{ category }}|{{ name }}">{{ label }}: {{ name }}</option>
+        {% endfor %}
+        {% endfor %}
+      </select>
+      <input type="datetime-local" name="logged_at" value="{{ now_local }}" required>
+      <button type="submit">Log</button>
+    </form>
+  </details>
+</body>
+</html>

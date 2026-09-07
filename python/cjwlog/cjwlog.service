@@ -1,0 +1,18 @@
+[Unit]
+Description=cjwlog (personal log + dashboard) web apps
+After=network-online.target weed-mount.service
+Wants=network-online.target
+Requires=weed-mount.service
+
+[Service]
+Type=simple
+User=cjw
+Group=cjw
+WorkingDirectory=/home/cjw/github/sbx/python/cjwlog
+ExecStart=/home/cjw/github/sbx/python/cjwlog/run.sh
+KillMode=control-group
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
