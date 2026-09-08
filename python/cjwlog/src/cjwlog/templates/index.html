@@ -39,6 +39,19 @@
   </section>
 
   <section>
+    <h2>Food</h2>
+    <div class="button-row">
+      {% for name in food %}
+      <form method="post" action="/intake">
+        <input type="hidden" name="category" value="food">
+        <input type="hidden" name="name" value="{{ name }}">
+        <button type="submit">{{ name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
     <h2>Substances</h2>
     {% for category, label, names in substances %}
     <p>{{ label }}</p>
@@ -116,5 +129,14 @@
       <button type="submit">Log</button>
     </form>
   </details>
+
+  <script>
+    document.addEventListener('submit', () => sessionStorage.setItem('scrollY', window.scrollY));
+    const y = sessionStorage.getItem('scrollY');
+    if (y !== null) {
+      sessionStorage.removeItem('scrollY');
+      window.scrollTo(0, parseInt(y, 10));
+    }
+  </script>
 </body>
 </html>

@@ -15,6 +15,8 @@ from cjwlog.db import get_connection, init_db, sync_to_remote
 app = FastAPI()
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
+FOOD = ["Snack", "Meal"]
+
 SUBSTANCES = [
     ("coffee", "Coffee", ["Small", "Medium", "Large"]),
     ("alcohol", "Alcohol", ["Beer", "Wine", "Liquor"]),
@@ -100,6 +102,7 @@ def index(request: Request):
         "index.html",
         {
             "recent": recent,
+            "food": FOOD,
             "substances": SUBSTANCES,
             "scale": range(1, 11),
             "default_bedtime": default_bedtime.strftime("%Y-%m-%dT%H:%M"),
