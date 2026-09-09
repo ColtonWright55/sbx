@@ -4,18 +4,21 @@ from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, FastAPI, Form, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
 from cjwlog.db import get_connection, init_db, sync_to_remote
+from cjwlog.logger.weather import fetch_weather
 
 app = FastAPI()
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 FOOD = ["Snack", "Meal"]
+
+EXERCISE = ["Run", "Weights"]
 
 SUBSTANCES = [
     ("coffee", "Coffee", ["Small", "Medium", "Large"]),
@@ -24,7 +27,7 @@ SUBSTANCES = [
 ]
 
 
-UNDO_WINDOW = timedelta(hours=12)
+UNDO_WINDOW = timedelta(hours=2)
 
 OWNTRACKS_USER = os.environ.get("CJWLOG_OWNTRACKS_USER")
 OWNTRACKS_PASS = os.environ.get("CJWLOG_OWNTRACKS_PASS")
@@ -103,6 +106,7 @@ def index(request: Request):
         {
             "recent": recent,
             "food": FOOD,
+            "exercise": EXERCISE,
             "substances": SUBSTANCES,
             "scale": range(1, 11),
             "default_bedtime": default_bedtime.strftime("%Y-%m-%dT%H:%M"),
@@ -133,8 +137,22 @@ def log_sleep(bedtime: str = Form(...), wake_time: str = Form(...)):
     return RedirectResponse("/", status_code=303)
 
 
+def _attach_weather(row_id: int, logged_at_iso: str) -> None:
+    weather = fetch_weather(datetime.fromisoformat(logged_at_iso))
+    if weather is None:
+        return
+    temp_f, humidity_pct, solar_radiation = weather
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE intake SET temp_f = ?, humidity_pct = ?, solar_radiation = ? WHERE id = ?",
+            (temp_f, humidity_pct, solar_radiation, row_id),
+        )
+    sync_to_remote()
+
+
 @app.post("/intake")
 def log_intake(
+    background_tasks: BackgroundTasks,
     category: str = Form(""),
     name: str = Form(""),
     combo: str = Form(""),
@@ -143,11 +161,14 @@ def log_intake(
 ):
     if combo:
         category, name = combo.split("|", 1)
+    logged_at_iso = to_utc_iso(logged_at) if logged_at else now()
     with get_connection() as conn:
-        conn.execute(
+        cur = conn.execute(
             "INSERT INTO intake (logged_at, category, name, amount) VALUES (?, ?, ?, ?)",
-            (to_utc_iso(logged_at) if logged_at else now(), category, name, amount or None),
+            (logged_at_iso, category, name, amount or None),
         )
+    if category == "exercise" and name == "Run":
+        background_tasks.add_task(_attach_weather, cur.lastrowid, logged_at_iso)
     sync_to_remote()
     return RedirectResponse("/", status_code=303)
 

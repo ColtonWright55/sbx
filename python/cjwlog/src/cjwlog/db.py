@@ -71,10 +71,19 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, coltype: str) -> None:
+    existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
+
+
 def init_db() -> None:
     restore_from_remote_if_missing()
     with get_connection() as conn:
         conn.executescript(SCHEMA)
+        _ensure_column(conn, "intake", "temp_f", "REAL")
+        _ensure_column(conn, "intake", "humidity_pct", "REAL")
+        _ensure_column(conn, "intake", "solar_radiation", "REAL")
 
 
 def restore_from_remote_if_missing() -> None:

@@ -3,7 +3,7 @@
 ## Dev
 
 ```
-uv run uvicorn cjwlog.main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn cjwlog.logger.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 `--reload` restarts the process on every file save — dev convenience only, drop

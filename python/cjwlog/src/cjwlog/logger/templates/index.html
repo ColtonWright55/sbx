@@ -52,6 +52,19 @@
   </section>
 
   <section>
+    <h2>Exercise</h2>
+    <div class="button-row">
+      {% for name in exercise %}
+      <form method="post" action="/intake">
+        <input type="hidden" name="category" value="exercise">
+        <input type="hidden" name="name" value="{{ name }}">
+        <button type="submit">{{ name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
     <h2>Substances</h2>
     {% for category, label, names in substances %}
     <p>{{ label }}</p>
