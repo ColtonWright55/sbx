@@ -108,7 +108,6 @@ def index(request: Request):
             "food": FOOD,
             "exercise": EXERCISE,
             "substances": SUBSTANCES,
-            "scale": range(1, 11),
             "default_bedtime": default_bedtime.strftime("%Y-%m-%dT%H:%M"),
             "default_wake": default_wake.strftime("%Y-%m-%dT%H:%M"),
             "now_local": datetime.now().strftime("%Y-%m-%dT%H:%M"),
