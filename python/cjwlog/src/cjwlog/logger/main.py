@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 from datetime import datetime, time, timedelta, timezone
@@ -216,6 +217,57 @@ async def owntracks(request: Request, _auth: None = Depends(check_owntracks_auth
                     item.get("tid"),
                 ),
             )
+    sync_to_remote()
+    return {}
+
+
+HEALTH_KNOWN_KEYS = {"date", "qty", "start", "end", "source"}
+HEALTH_SAMPLE_DIR = Path("data/health_samples")
+
+
+def parse_health_date(s: str) -> str:
+    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).isoformat()
+
+
+@app.post("/health")
+async def health(request: Request):
+    body = await request.body()
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    HEALTH_SAMPLE_DIR.mkdir(parents=True, exist_ok=True)
+    (HEALTH_SAMPLE_DIR / f"{ts}.json").write_bytes(body)
+
+    payload = json.loads(body)
+    metrics = payload.get("data", {}).get("metrics", [])
+    dropped = 0
+    with get_connection() as conn:
+        for metric in metrics:
+            name = metric.get("name")
+            units = metric.get("units")
+            for row in metric.get("data", []):
+                extra = {k: v for k, v in row.items() if k not in HEALTH_KNOWN_KEYS}
+                try:
+                    conn.execute(
+                        """
+                        INSERT INTO health_metric
+                            (logged_at, metric, units, source, start_at, end_at, qty, extra)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            parse_health_date(row["date"]),
+                            name,
+                            units,
+                            row.get("source"),
+                            parse_health_date(row["start"]) if "start" in row else None,
+                            parse_health_date(row["end"]) if "end" in row else None,
+                            row.get("qty"),
+                            json.dumps(extra) if extra else None,
+                        ),
+                    )
+                except Exception as e:
+                    dropped += 1
+                    print(f"[cjwlog] health row dropped (metric={name}): {e}")
+    if dropped:
+        print(f"[cjwlog] health sample {ts}.json: {dropped} row(s) dropped, raw json kept for replay")
     sync_to_remote()
     return {}
 

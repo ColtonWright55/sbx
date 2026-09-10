@@ -61,6 +61,20 @@ CREATE TABLE IF NOT EXISTS gps (
     battery_pct INTEGER,
     tid TEXT
 );
+
+CREATE TABLE IF NOT EXISTS health_metric (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    logged_at TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    units TEXT,
+    source TEXT,
+    start_at TEXT,
+    end_at TEXT,
+    qty REAL,
+    extra TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_health_metric_lookup ON health_metric(metric, logged_at);
 """
 
 
