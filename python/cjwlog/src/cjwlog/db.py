@@ -62,6 +62,12 @@ CREATE TABLE IF NOT EXISTS gps (
     tid TEXT
 );
 
+CREATE TABLE IF NOT EXISTS work_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    logged_at TEXT NOT NULL,
+    category TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS health_metric (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     logged_at TEXT NOT NULL,
@@ -98,6 +104,7 @@ def init_db() -> None:
         _ensure_column(conn, "intake", "temp_f", "REAL")
         _ensure_column(conn, "intake", "humidity_pct", "REAL")
         _ensure_column(conn, "intake", "solar_radiation", "REAL")
+        _ensure_column(conn, "work_log", "tag", "TEXT")
 
 
 def restore_from_remote_if_missing() -> None:

@@ -27,6 +27,12 @@ SUBSTANCES = [
     ("supplement", "Supplements", ["Creatine", "Multivitamin", "Melatonin"]),
 ]
 
+WORK_CATEGORIES = ["Coding", "Lab Work", "Writing", "Study/Learning", "Fundamental Research"]
+
+WORK_TAGS = ["Volunteer"]
+
+WORK_STOP = "Stopped"
+
 
 UNDO_WINDOW = timedelta(hours=2)
 
@@ -107,6 +113,49 @@ def index(request: Request):
     )
 
 
+@app.get("/work")
+def work_page(request: Request):
+    with get_connection() as conn:
+        current = conn.execute(
+            "SELECT category, tag, logged_at FROM work_log ORDER BY logged_at DESC LIMIT 1"
+        ).fetchone()
+        rows = conn.execute(
+            """
+            SELECT 'work_log' AS table_name, id, logged_at, category || COALESCE(' (' || tag || ')', '') AS description FROM work_log
+            UNION ALL
+            SELECT 'note', id, logged_at, text FROM note
+            ORDER BY logged_at DESC
+            LIMIT 15
+            """
+        ).fetchall()
+    cutoff = undo_cutoff()
+    recent = [
+        dict(row, can_undo=row["logged_at"] > cutoff, display_time=to_display(row["logged_at"]))
+        for row in rows
+    ]
+    return templates.TemplateResponse(
+        request,
+        "work.html",
+        {
+            "categories": WORK_CATEGORIES,
+            "tags": WORK_TAGS,
+            "stop": WORK_STOP,
+            "current": dict(current) if current else None,
+            "recent": recent,
+        },
+    )
+
+
+@app.post("/work")
+def log_work(category: str = Form(...), tag: str = Form("")):
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO work_log (logged_at, category, tag) VALUES (?, ?, ?)", (now(), category, tag or None)
+        )
+    sync_to_remote()
+    return RedirectResponse("/work", status_code=303)
+
+
 @app.post("/weight")
 def log_weight(weight_lbs: float = Form(...)):
     with get_connection() as conn:
@@ -165,11 +214,11 @@ def log_psychiatric(mood: str = Form(""), energy: str = Form("")):
 
 
 @app.post("/note")
-def log_note(text: str = Form(...)):
+def log_note(text: str = Form(...), back: str = Form("/")):
     with get_connection() as conn:
         conn.execute("INSERT INTO note (logged_at, text) VALUES (?, ?)", (now(), text))
     sync_to_remote()
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse(back, status_code=303)
 
 
 @app.post("/owntracks")
@@ -268,14 +317,14 @@ async def health(request: Request):
     return {}
 
 
-UNDOABLE_TABLES = {"weight", "intake", "psychiatric", "note"}
+UNDOABLE_TABLES = {"weight", "intake", "psychiatric", "note", "work_log"}
 
 
 @app.post("/undo")
-def undo(table: str = Form(...), id: int = Form(...)):
+def undo(table: str = Form(...), id: int = Form(...), back: str = Form("/")):
     if table not in UNDOABLE_TABLES:
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(back, status_code=303)
     with get_connection() as conn:
         conn.execute(f"DELETE FROM {table} WHERE id = ? AND logged_at > ?", (id, undo_cutoff()))
     sync_to_remote()
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse(back, status_code=303)
