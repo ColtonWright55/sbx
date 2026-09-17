@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>gps</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body { height: 100%; margin: 0; background: #111; }
+    #map { position: fixed; inset: 0; }
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const DAYS = 3;
+    const REFRESH_MS = 60_000;
+
+    const map = L.map('map', { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      subdomains: 'abc',
+      maxZoom: 19,
+    }).addTo(map);
+
+    let layer = L.layerGroup().addTo(map);
+
+    async function refresh() {
+      const points = await (await fetch(`/gps.json?days=${DAYS}`)).json();
+      layer.clearLayers();
+      if (points.length === 0) return;
+
+      const latlngs = points.map(p => [p.latitude, p.longitude]);
+      L.polyline(latlngs, { color: '#4da6ff', weight: 2, opacity: 0.6 }).addTo(layer);
+
+      const newest = new Date(points[points.length - 1].logged_at).getTime();
+      const oldest = new Date(points[0].logged_at).getTime();
+      const span = Math.max(newest - oldest, 1);
+      for (const p of points) {
+        const age = (new Date(p.logged_at).getTime() - oldest) / span; // 0 = oldest, 1 = newest
+        L.circleMarker([p.latitude, p.longitude], {
+          radius: 3 + age * 3,
+          color: '#ff5c33',
+          fillColor: '#ff5c33',
+          fillOpacity: 0.3 + age * 0.6,
+          stroke: false,
+        }).addTo(layer);
+      }
+      map.fitBounds(latlngs, { padding: [30, 30] });
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+
+    // iOS home-screen web apps often init the map before the WebView finishes
+    // sizing, and re-show a stale/zero-size canvas when reopened from the home
+    // screen -- force Leaflet to recheck its container size in both cases.
+    setTimeout(() => map.invalidateSize(), 200);
+    window.addEventListener("pageshow", () => map.invalidateSize());
+    window.addEventListener("resize", () => map.invalidateSize());
+  </script>
+</body>
+</html>

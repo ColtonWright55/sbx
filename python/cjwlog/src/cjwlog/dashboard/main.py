@@ -3,8 +3,8 @@ import pandas as pd
 import streamlit as st
 
 from cjwlog.dashboard.charts import events_in_window, plot_with_now
+from cjwlog.dashboard.gps_map import gps_map
 from cjwlog.dashboard.pharmacokinetics import CAFFEINE_MG, bac_curve, caffeine_curve, creatine_saturation_curve
-from cjwlog.dashboard.sleep_debt import sleep_debt_curve
 from cjwlog.dashboard.weight import weight_chart
 from cjwlog.db import get_connection
 
@@ -66,5 +66,5 @@ plot_with_now(
     events=events_in_window(conn, "supplement", long_start, now, name="Creatine"),
 )
 
-st.subheader("Sleep Debt (14-day rolling)")
-plot_with_now(now, sleep_debt_curve(conn), "hrs", "#1baf7a")
+st.subheader("Location")
+gps_map(conn, long_start, now)

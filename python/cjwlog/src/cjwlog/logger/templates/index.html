@@ -33,15 +33,6 @@
   </section>
 
   <section>
-    <h2>Sleep</h2>
-    <form method="post" action="/sleep">
-      <label>Bedtime <input type="datetime-local" name="bedtime" value="{{ default_bedtime }}" required></label>
-      <label>Wake <input type="datetime-local" name="wake_time" value="{{ default_wake }}" required></label>
-      <button type="submit">Log</button>
-    </form>
-  </section>
-
-  <section>
     <h2>Food</h2>
     <div class="button-row">
       {% for name in food %}
