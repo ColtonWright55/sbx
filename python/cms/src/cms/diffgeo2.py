@@ -9,7 +9,7 @@ import numpy as np
 import pyvista as pv
 import open3d as o3d
 
-from diffgeo1 import *
+from cms.diffgeo1 import *
 
 def plot_delta_curvatures_pb(pb1, pb2, K1, K2, H1, H2, opacity=0.2):
     """
